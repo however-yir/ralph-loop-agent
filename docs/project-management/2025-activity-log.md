@@ -16,3 +16,4 @@
 | 7 | 2025-06-08 | Sunday | core | #4 | Deliver core feature slice 07 | seed-2025-ralph-loop-agent-07 |
 | 8 | 2025-07-02 | Wednesday | core | #5 | Deliver core feature slice 08 | seed-2025-ralph-loop-agent-08 |
 | 9 | 2025-07-29 | Tuesday | core | #3 | Deliver core feature slice 09 | seed-2025-ralph-loop-agent-09 |
+| 10 | 2025-08-25 | Monday | fix | #6 | Apply fix and hardening patch 10 | seed-2025-ralph-loop-agent-10 |
