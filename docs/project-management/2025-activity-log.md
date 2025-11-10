@@ -19,3 +19,4 @@
 | 10 | 2025-08-25 | Monday | fix | #6 | Apply fix and hardening patch 10 | seed-2025-ralph-loop-agent-10 |
 | 11 | 2025-09-21 | Sunday | fix | #6 | Apply fix and hardening patch 11 | seed-2025-ralph-loop-agent-11 |
 | 12 | 2025-10-14 | Tuesday | test | #7 | Add regression/test evidence checkpoint 12 | seed-2025-ralph-loop-agent-12 |
+| 13 | 2025-11-10 | Monday | test | #7 | Add regression/test evidence checkpoint 13 | seed-2025-ralph-loop-agent-13 |
