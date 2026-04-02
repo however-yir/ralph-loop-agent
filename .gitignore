@@ -4,6 +4,7 @@ tasks/
 tmp/
 .turbo/
 .env*
+.DS_Store
 
 # opensrc - source code for packages
 opensrc/
