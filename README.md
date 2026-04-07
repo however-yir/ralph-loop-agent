@@ -1,280 +1,100 @@
-# ralph-loop-agent
+# ralph-loop-agent - 循环式 Agent 执行框架 | Loop-based Agent Execution Framework
 
-**Continuous Autonomy for the [AI SDK](https://ai-sdk.dev/)**
+项目面向多步骤任务执行，支持循环调度、状态反馈与工具集成。
 
-> **Note**: This package is experimental. APIs may change between versions.
+## 目录
 
-## Packages
+- [1. 项目概述](#1-项目概述)
+- [2. 目标与场景](#2-目标与场景)
+- [3. 核心能力](#3-核心能力)
+- [4. 技术栈](#4-技术栈)
+- [5. 仓库结构](#5-仓库结构)
+- [6. Quick Start](#6-quick-start)
+- [7. 配置建议](#7-配置建议)
+- [8. 开发与测试](#8-开发与测试)
+- [9. 协作与发布](#9-协作与发布)
+- [10. 路线图](#10-路线图)
+- [11. 贡献指南](#11-贡献指南)
+- [12. License](#12-license)
 
-| Package | Description |
-|---------|-------------|
-| [ralph-loop-agent](./packages/ralph-loop-agent) | Core agent framework with loop control, stop conditions, and context management |
+## 1. 项目概述
 
-## Examples
-
-| Example | Description |
-|---------|-------------|
-| [cli](./examples/cli) | Full-featured CLI agent with Vercel Sandbox, Playwright, PostgreSQL, and GitHub PR integration |
-
-## Installation
-
-```bash
-npm install ralph-loop-agent ai zod
-```
-
-## What is the Ralph Wiggum Technique?
-
-The Ralph Wiggum technique is a development methodology built around continuous AI agent loops. At its core, it's elegantly simple: keep feeding an AI agent a task until the job is done. As Geoffrey Huntley describes it: **"Ralph is a Bash loop."**
-
-Named after the lovably persistent Ralph Wiggum from *The Simpsons*, this approach embraces iterative improvement over single-shot perfection. Where traditional agentic workflows stop when an LLM finishes calling tools, Ralph keeps going—verifying completion, providing feedback, and running another iteration until the task actually succeeds.
-
-Think of it as `while (true)` for AI autonomy: the agent works, an evaluator checks the result, and if it's not done, the agent tries again with context from previous attempts.
-
-```
-┌──────────────────────────────────────────────────────┐
-│                   Ralph Loop (outer)                 │
-│  ┌────────────────────────────────────────────────┐  │
-│  │  AI SDK Tool Loop (inner)                      │  │
-│  │  LLM ↔ tools ↔ LLM ↔ tools ... until done      │  │
-│  └────────────────────────────────────────────────┘  │
-│                         ↓                            │
-│  verifyCompletion: "Is the TASK actually complete?"  │
-│                         ↓                            │
-│       No? → Inject feedback → Run another iteration  │
-│       Yes? → Return final result                     │
-└──────────────────────────────────────────────────────┘
-```
-
-### Why Continuous Autonomy?
-
-Standard AI SDK tool loops are great—but they stop as soon as the model finishes its tool calls. That works for simple tasks, but complex work often requires:
-
-- **Verification**: Did the agent actually accomplish what was asked?
-- **Persistence**: Retry on failure instead of giving up
-- **Feedback loops**: Guide the agent based on real-world checks
-- **Long-running tasks**: Migrations, refactors, multi-file changes
-
-Ralph wraps the AI SDK's `generateText` in an outer loop that keeps iterating until your `verifyCompletion` function confirms success—or you hit a safety limit.
-
-## Features
-
-- **Iterative completion** — Runs until `verifyCompletion` says the task is done
-- **Full AI SDK compatibility** — Uses AI Gateway string format, supports all AI SDK tools
-- **Flexible stop conditions** — Limit by iterations, tokens, or cost
-- **Context management** — Built-in summarization for long-running loops
-- **Streaming support** — Stream the final iteration for responsive UIs
-- **Feedback injection** — Failed verifications can guide the next attempt
-
-## Usage
-
-### Basic Example
-
-```typescript
-import { RalphLoopAgent, iterationCountIs } from 'ralph-loop-agent';
-
-const agent = new RalphLoopAgent({
-  model: 'anthropic/claude-opus-4.5',
-  instructions: 'You are a helpful coding assistant.',
-  stopWhen: iterationCountIs(10),
-  verifyCompletion: async ({ result }) => ({
-    complete: result.text.includes('DONE'),
-    reason: 'Task completed successfully',
-  }),
-});
-
-const { text, iterations, completionReason } = await agent.loop({
-  prompt: 'Create a function that calculates fibonacci numbers',
-});
-
-console.log(text);
-console.log(`Completed in ${iterations} iterations`);
-console.log(`Reason: ${completionReason}`);
-```
-
-### Migration Example
-
-```typescript
-import { RalphLoopAgent, iterationCountIs } from 'ralph-loop-agent';
-
-const migrationAgent = new RalphLoopAgent({
-  model: 'anthropic/claude-opus-4.5',
-  instructions: `You are migrating a codebase from Jest to Vitest.
-    
-    Completion criteria:
-    - All test files use vitest imports
-    - vitest.config.ts exists
-    - All tests pass when running 'pnpm test'`,
-  
-  tools: { readFile, writeFile, execute },
-  
-  stopWhen: iterationCountIs(50),
-  
-  verifyCompletion: async () => {
-    const checks = await Promise.all([
-      fileExists('vitest.config.ts'),
-      !await fileExists('jest.config.js'),
-      noFilesMatch('**/*.test.ts', /from ['"]@jest/),
-      fileContains('package.json', '"vitest"'),
-    ]);
-    
-    return { 
-      complete: checks.every(Boolean),
-      reason: checks.every(Boolean) ? 'Migration complete' : 'Structural checks failed'
-    };
-  },
-
-  onIterationStart: ({ iteration }) => console.log(`Starting iteration ${iteration}`),
-  onIterationEnd: ({ iteration, duration }) => console.log(`Iteration ${iteration} completed in ${duration}ms`),
-});
-
-const result = await migrationAgent.loop({
-  prompt: 'Migrate all Jest tests to Vitest.',
-});
-
-console.log(result.text);
-console.log(result.iterations);
-console.log(result.completionReason);
-```
-
-### With Tools
-
-```typescript
-import { RalphLoopAgent, iterationCountIs } from 'ralph-loop-agent';
-import { tool } from 'ai';
-import { z } from 'zod';
-
-const agent = new RalphLoopAgent({
-  model: 'anthropic/claude-opus-4.5',
-  instructions: 'You help users with file operations.',
-  tools: {
-    readFile: tool({
-      description: 'Read a file from disk',
-      parameters: z.object({ path: z.string() }),
-      execute: async ({ path }) => ({ content: '...' }),
-    }),
-    writeFile: tool({
-      description: 'Write content to a file',
-      parameters: z.object({ path: z.string(), content: z.string() }),
-      execute: async ({ path, content }) => ({ success: true }),
-    }),
-  },
-  stopWhen: iterationCountIs(10),
-  verifyCompletion: ({ result }) => ({
-    complete: result.text.includes('All files updated'),
-  }),
-});
-```
-
-### Streaming
-
-```typescript
-const stream = await agent.stream({
-  prompt: 'Build a calculator',
-});
-
-for await (const chunk of stream.textStream) {
-  process.stdout.write(chunk);
-}
-```
-
-Note: Streaming runs non-streaming iterations until verification passes or the final iteration, then streams that last iteration.
-
-## API Reference
-
-### `RalphLoopAgent`
-
-#### Constructor Options
-
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-| `model` | `LanguageModel` | ✅ | - | The AI model (AI Gateway string format) |
-| `instructions` | `string` | ❌ | - | System prompt for the agent |
-| `tools` | `ToolSet` | ❌ | - | Tools the agent can use |
-| `stopWhen` | `IterationStopCondition` | ❌ | `iterationCountIs(10)` | When to stop the outer loop |
-| `toolStopWhen` | `StopCondition` | ❌ | `stepCountIs(20)` | When to stop the inner tool loop |
-| `verifyCompletion` | `function` | ❌ | - | Function to verify task completion |
-| `onIterationStart` | `function` | ❌ | - | Called at start of each iteration |
-| `onIterationEnd` | `function` | ❌ | - | Called at end of each iteration |
-
-### Stop Conditions
-
-Ralph provides multiple ways to limit agent execution:
-
-#### `iterationCountIs(n)`
-
-Stop after `n` iterations.
-
-```typescript
-import { iterationCountIs } from 'ralph-loop-agent';
-
-stopWhen: iterationCountIs(50)
-```
-
-#### `tokenCountIs(n)`
-
-Stop when total token usage (input + output) exceeds `n`.
-
-```typescript
-import { tokenCountIs } from 'ralph-loop-agent';
-
-stopWhen: tokenCountIs(100_000)
-```
-
-#### `costIs(maxCost, rates?)`
-
-Stop when estimated cost exceeds `maxCost`. Uses built-in pricing for common models, or accepts custom rates.
-
-```typescript
-import { costIs } from 'ralph-loop-agent';
-
-// Stop at $5
-stopWhen: costIs(5.00)
-
-// With custom pricing
-stopWhen: costIs(5.00, { inputTokenCost: 0.01, outputTokenCost: 0.03 })
-```
-
-#### Combining Stop Conditions
-
-Pass an array to stop when *any* condition is met:
-
-```typescript
-stopWhen: [iterationCountIs(50), tokenCountIs(100_000), costIs(5.00)]
-```
-
-### `verifyCompletion`
-
-Function to verify if the task is complete. Return `{ complete: true }` to stop the loop, or `{ complete: false, reason: "..." }` to continue with feedback:
-
-```typescript
-verifyCompletion: async ({ result, iteration, allResults, originalPrompt }) => ({
-  complete: boolean,
-  reason?: string, // Feedback if not complete, or explanation if complete
-})
-```
-
-The `reason` string is injected into the next iteration, helping the agent understand what still needs work.
-
-### Methods
-
-**`loop(options)`** — Runs the agent loop until completion
-
-```typescript
-interface RalphLoopAgentResult {
-  text: string;                              // Final output text
-  iterations: number;                        // Number of iterations run
-  completionReason: 'verified' | 'max-iterations' | 'aborted';
-  reason?: string;                           // Reason from verifyCompletion
-  result: GenerateTextResult;                // Full result from last iteration
-  allResults: GenerateTextResult[];          // All iteration results
-  totalUsage: LanguageModelUsage;            // Aggregated token usage
-}
-```
-
-**`stream(options)`** — Streams the final iteration
-
-Runs non-streaming iterations until verification passes, then streams the final one. Returns `StreamTextResult`.
-
-## License
-
-Apache-2.0
+本仓库以工程化可维护为目标，强调文档清晰、结构稳定、可持续迭代。
+
+## 2. 目标与场景
+
+适用场景：
+
+- 作为业务功能开发与验证的基础仓库。
+- 作为团队内部协作与知识沉淀的载体。
+- 作为后续扩展和二次开发的起点。
+
+## 3. 核心能力
+
+- 支持循环式任务执行与状态管理。
+- 支持工作流拆分与结果汇总。
+- 支持外部工具与服务接入。
+
+## 4. 技术栈
+
+- Node.js / JavaScript
+
+## 5. 仓库结构
+
+建议优先阅读：
+
+- README.md：项目入口与整体说明。
+- docs 或同类目录：架构、规范、部署与 FAQ。
+- 核心源码目录：按模块深入阅读。
+
+## 6. Quick Start
+
+1. 克隆仓库并进入目录：
+
+    git clone https://github.com/however-yir/ralph-loop-agent.git
+    cd ralph-loop-agent
+
+2. 安装依赖并启动（按项目类型选择）：
+
+Node.js 项目常用命令：
+    npm install
+    npm run dev
+
+3. 最小验证建议：
+
+- 依赖安装成功。
+- 核心流程可运行。
+- 基础测试或检查通过。
+
+## 7. 配置建议
+
+建议按 dev / staging / prod 分层配置，并将密钥类信息放入环境变量或密钥管理系统。
+
+## 8. 开发与测试
+
+推荐流程：
+
+1. 基于默认分支创建功能分支。
+2. 小步提交并保持提交目标单一。
+3. 本地完成构建与测试后再推送。
+4. 通过 Pull Request 完成评审与合并。
+
+## 9. 协作与发布
+
+建议使用语义化版本，发布说明应包含新增、修复与兼容性说明。
+
+## 10. 路线图
+
+建议按以下顺序推进：
+
+1. 稳定主流程与关键接口。
+2. 优化模块边界与可观测性。
+3. 完善自动化测试与文档体系。
+
+## 11. 贡献指南
+
+提交建议包含：变更背景、实现说明、验证结果、风险评估。
+
+## 12. License
+
+请以仓库内现有 License 文件为准。
