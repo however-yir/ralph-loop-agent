@@ -8,3 +8,5 @@ tmp/
 
 # opensrc - source code for packages
 opensrc/
+
+!.env.example
