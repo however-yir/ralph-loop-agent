@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@vercel/sandbox": "^1.1.2",
-    "ai": "^6.0.0",
+    "ai": "^6.0.158",
     "dotenv": "^17.2.3",
     "ignore": "^7.0.5",
     "just-bash": "1.4.2",
