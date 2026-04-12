@@ -21,8 +21,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.6(zod@4.3.4)
       dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
+        specifier: ^17.4.1
+        version: 17.4.1
       ignore:
         specifier: ^7.0.5
         version: 7.0.5
@@ -486,8 +486,8 @@ packages:
     resolution: {integrity: sha512-sSuxWU5j5SR9QQji/o2qMvqRNYRDOcBTgsJ/DeCf4iSN4gW+gNMXM7wFIP+fdXZxoNiAnHUTGjCr+TSWXdRDKg==}
     engines: {node: '>=0.3.1'}
 
-  dotenv@17.2.3:
-    resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
+  dotenv@17.4.1:
+    resolution: {integrity: sha512-k8DaKGP6r1G30Lx8V4+pCsLzKr8vLmV2paqEj1Y55GdAgJuIqpRp5FfajGF8KtwMxCz9qJc6wUIJnm053d/WCw==}
     engines: {node: '>=12'}
 
   es-module-lexer@1.7.0:
@@ -1094,7 +1094,7 @@ snapshots:
 
   diff@8.0.2: {}
 
-  dotenv@17.2.3: {}
+  dotenv@17.4.1: {}
 
   es-module-lexer@1.7.0: {}
 
