@@ -82,7 +82,7 @@ jobs:
 
           if [ -f package.json ]; then
             if [ -f pnpm-lock.yaml ]; then
-              pnpm run lint --if-present
+              pnpm run --if-present lint
             else
               npm run lint --if-present
             fi
@@ -124,7 +124,7 @@ jobs:
 
           if [ -f package.json ]; then
             if [ -f pnpm-lock.yaml ]; then
-              pnpm run build --if-present
+              pnpm run --if-present build
             else
               npm run build --if-present
             fi
@@ -158,7 +158,7 @@ jobs:
 
           if [ -f package.json ]; then
             if [ -f pnpm-lock.yaml ]; then
-              pnpm run test --if-present
+              pnpm run --if-present test
             else
               npm test --if-present
             fi
