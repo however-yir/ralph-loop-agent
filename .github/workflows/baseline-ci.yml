@@ -36,6 +36,14 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup pnpm
+        if: ${{ hashFiles('**/pnpm-lock.yaml') != '' }}
+        shell: bash
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+          pnpm --version
+
       - name: Setup Python
         if: ${{ hashFiles('**/requirements.txt', '**/pyproject.toml') != '' }}
         uses: actions/setup-python@v5
@@ -55,6 +63,17 @@ jobs:
         with:
           go-version: '1.22'
 
+      - name: Install JavaScript dependencies
+        if: ${{ hashFiles('**/package.json') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          else
+            npm ci || npm install
+          fi
+
       - name: Lint
         shell: bash
         run: |
@@ -62,8 +81,11 @@ jobs:
           ran=0
 
           if [ -f package.json ]; then
-            npm ci || npm install
-            npm run lint --if-present
+            if [ -f pnpm-lock.yaml ]; then
+              pnpm run lint --if-present
+            else
+              npm run lint --if-present
+            fi
             ran=1
           fi
 
@@ -101,7 +123,11 @@ jobs:
           ran=0
 
           if [ -f package.json ]; then
-            npm run build --if-present
+            if [ -f pnpm-lock.yaml ]; then
+              pnpm run build --if-present
+            else
+              npm run build --if-present
+            fi
             ran=1
           fi
 
@@ -131,7 +157,11 @@ jobs:
           ran=0
 
           if [ -f package.json ]; then
-            npm test --if-present
+            if [ -f pnpm-lock.yaml ]; then
+              pnpm run test --if-present
+            else
+              npm test --if-present
+            fi
             ran=1
           fi
 
